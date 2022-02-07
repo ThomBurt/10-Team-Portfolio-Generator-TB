@@ -1,98 +1,140 @@
-const inquirer = require('inquirer');
-const pageGenerator = require("generate-page.js");
+// node modules
+const inquirer = require("inquirer");
+const fs = require("fs");
+const generateTeam = require("./lib/generate-page");
 
 // lib modules
 const Engineer = require("./lib/Engineer");
 const Intern = require("./lib/Intern");
 const Manager = require("./lib/Manager");
 
+// Array for answers to questions
+const newStaffMembers = [];
 
-
-// Questions
+// Array object questions asked in CLI to user
 const questions = async () => {
-    const answers = await inquirer
-      .prompt([
-        {
-          type: "input",
-          message: "What is your name?",
-          name: "name",
-        },
-        {
-          type: "input",
-          message: "What is your ID number?",
-          name: "id",
-        },
-        {
-          type: "input",
-          message: "What is your email?",
-          name: "email",
-        },
-        {
-          type: "list",
-          message: "What is your role?",
-          name: "role",
-          choices: ["Engineer", "Intern", "Manager"],
-        },
-      ])
+
+  console.log(`
+  ===================================================
+              Create a Team Profile
+  ===================================================
+  `)
   
-  
-        // if manager selected, answer these specific question
-        if (answers.role === "Manager") {
-          const managerAns = await inquirer
-            .prompt([
-              {
-                type: "input",
-                message: "What is your office number",
-                name: "officeNumber",
-              },
-            ])
-            const newManager = new Manager(
+  const answers = await inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is your name?",
+        name: "name",
+      },
+      {
+        type: "input",
+        message: "What is your ID number?",
+        name: "id",
+      },
+      {
+        type: "input",
+        message: "What is your email address?",
+        name: "email",
+      },
+      {
+        type: "list",
+        message: "What is your role in the company?",
+        name: "role",
+        choices: ["Engineer", "Intern", "Manager"],
+      },
+    ])
+
+
+    
+    //  console.log(answers);
+      // if manager selected, answer these specific question
+      if (answers.role === "Manager") {
+        const managerResponse = await inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "What is your office number",
+              name: "officeNumber",
+            },
+          ])
+          const newManager = new Manager(
+            answers.name,
+            answers.id,
+            answers.email,
+            managerResponse.officeNumber
+          );
+          newStaffMembers.push(newManager);
+          
+        // if engineer selected answer these set of questions
+      } else if (answers.role === "Engineer") {
+        const gitHubResponse = await inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "What is your GitHub username?",
+              name: "github",
+            }
+          ])
+            const newEngineer = new Engineer(
               answers.name,
               answers.id,
               answers.email,
-              managerAns.officeNumber
+              gitHubResponse.github
             );
-            newStaffMemberData.push(newManager);
-            
-          // if engineer selected answer these set of questions
-        } else if (answers.role === "Engineer") {
-          const githubAns = await inquirer
-            .prompt([
-              {
-                type: "input",
-                message: "What is your GitHub user name?",
-                name: "github",
-              }
-            ])
-              const newEngineer = new Engineer(
-                answers.name,
-                answers.id,
-                answers.email,
-                githubAns.github
-              );
-              newStaffMemberData.push(newEngineer);
-            
-          // if intern selected answer these set of questions
-        } else if (answers.role === "Intern") {
-          const internAns = await inquirer
-            .prompt([
-              {
-                type: "input",
-                message: "What university did you attend?",
-                name: "school",
-              },
-            ])
-            
-            const newIntern = new Intern(
-              answers.name,
-              answers.id,
-              answers.email,
-              internAns.school
-            );
-            newStaffMemberData.push(newIntern);          
-        } 
+            newStaffMembers.push(newEngineer);
+          
+        // if intern selected answer these set of questions
+      } else if (answers.role === "Intern") {
+        const internResponse = await inquirer
+          .prompt([
+            {
+              type: "input",
+              message: "What university did you go to?",
+              name: "school",
+            },
+          ])
+          
+          const newIntern = new Intern(
+            answers.name,
+            answers.id,
+            answers.email,
+            internResponse.school
+          );
+          newStaffMembers.push(newIntern);          
+      } 
+
+}; //end of questions function
+
+async function promptQuestions() {
+  await questions()
+    
   
-  }; //end of questions function
+  const addMemberResponse = await inquirer
+    .prompt([
+      {
+        name:'addMember',
+        type: 'list',
+        choices: ['Add a new member', 'Create your team'],
+        message: "What would you like to do next?"
+      }
+    ])
 
+    if (addMemberResponse.addMember === 'Add a new member') {
+      return promptQuestions()
+    }
+    return createTeam();
+}  
 
+promptQuestions();
+
+function createTeam () {
+  console.log("new employee", newStaffMembers)
+  fs.writeFileSync(
+    "./output/index.html",
+    generateTeam(newStaffMembers),
+    "utf-8",
+    console.log('SUCCESS! Your Team Portfolio Has been generated')
+  );
+}
 
